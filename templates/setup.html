@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+
+{% block title %}Setup - AI Interview Simulator{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2><i class="fas fa-cog me-2"></i>Interview Setup</h2>
+        <p class="text-muted">Configure your interview assessment</p>
+    </div>
+</div>
+
+<div class="form-section">
+    <h3><i class="fas fa-key me-2"></i>API Configuration</h3>
+    <div class="mb-3">
+        <label class="form-label">OpenAI API Key</label>
+        <input type="password" class="form-control" id="api-key" placeholder="sk-...">
+    </div>
+    <button class="btn btn-primary" onclick="testConnection()">Test Connection</button>
+</div>
+
+<div class="form-section">
+    <h3><i class="fas fa-briefcase me-2"></i>Job Configuration</h3>
+    <div class="row">
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label class="form-label">Job Position</label>
+                <input type="text" class="form-control" id="job-position" placeholder="e.g., Software Engineer">
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Company Name</label>
+                <input type="text" class="form-control" id="company" placeholder="e.g., TechCorp">
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label class="form-label">Technology Stack</label>
+                <input type="text" class="form-control" id="tech-stack" placeholder="e.g., Python, React">
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Experience Level</label>
+                <select class="form-control" id="experience-level">
+                    <option>Junior</option>
+                    <option>Mid-Level</option>
+                    <option>Senior</option>
+                </select>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="form-section">
+    <h3><i class="fas fa-user me-2"></i>Candidate Information</h3>
+    <div class="row">
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label class="form-label">Candidate Name</label>
+                <input type="text" class="form-control" id="candidate-name" placeholder="e.g., John Smith">
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Years of Experience</label>
+                <input type="number" class="form-control" id="experience-years" placeholder="e.g., 5">
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="mb-3">
+                <label class="form-label">HR Interview Responses</label>
+                <textarea class="form-control" id="hr-responses" rows="3" placeholder="Describe behavioral responses..."></textarea>
+            </div>
+            <div class="mb-3">
+                <label class="form-label">Technical Responses</label>
+                <textarea class="form-control" id="tech-responses" rows="3" placeholder="Describe technical performance..."></textarea>
+            </div>
+        </div>
+    </div>
+    <button class="btn btn-success" onclick="startAssessment()">Start Assessment</button>
+</div>
+
+<div id="progress-section" style="display: none;">
+    <h3>Assessment in Progress...</h3>
+    <div class="progress">
+        <div class="progress-bar" id="progress-bar" style="width: 0%"></div>
+    </div>
+    <div id="progress-status">Starting...</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function testConnection() {
+    const apiKey = document.getElementById('api-key').value;
+    if (!apiKey) {
+        alert('Please enter your API key');
+        return;
+    }
+    
+    fetch('/api/test_connection', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({api_key: apiKey})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert('Connection failed: ' + data.error);
+        } else {
+            alert('Connection successful!');
+        }
+    });
+}
+
+function startAssessment() {
+    const data = {
+        api_key: document.getElementById('api-key').value,
+        interview_data: {
+            job_details: {
+                position: document.getElementById('job-position').value,
+                company: document.getElementById('company').value,
+                tech_stack: document.getElementById('tech-stack').value,
+                experience_level: document.getElementById('experience-level').value,
+                department: 'Engineering',
+                team_size: '5-10'
+            },
+            candidate_info: {
+                name: document.getElementById('candidate-name').value,
+                experience_years: document.getElementById('experience-years').value,
+                current_role: 'Software Developer',
+                education: 'Bachelor\'s Degree',
+                previous_companies: 'Previous Company'
+            },
+            hr_responses: document.getElementById('hr-responses').value,
+            tech_responses: document.getElementById('tech-responses').value,
+            additional_context: 'None'
+        }
+    };
+    
+    document.getElementById('progress-section').style.display = 'block';
+    
+    fetch('/api/start_simulation', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.error) {
+            alert('Failed to start: ' + result.error);
+        } else {
+            pollProgress();
+        }
+    });
+}
+
+function pollProgress() {
+    fetch('/api/progress')
+    .then(response => response.json())
+    .then(data => {
+        document.getElementById('progress-bar').style.width = data.progress + '%';
+        document.getElementById('progress-status').textContent = data.step;
+        
+        if (data.status === 'running') {
+            setTimeout(pollProgress, 2000);
+        } else if (data.status === 'completed') {
+            window.location.href = '/results';
+        }
+    });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}Results - AI Interview Simulator{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2><i class="fas fa-chart-bar me-2"></i>Assessment Results</h2>
+    </div>
+</div>
+
+<div id="results-content">
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-trophy fa-2x text-warning mb-2"></i>
+                    <h3 id="total-score" class="text-primary">-/180</h3>
+                    <p class="mb-0">Overall Score</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-users fa-2x text-info mb-2"></i>
+                    <h3 id="hr-score" class="text-primary">-/80</h3>
+                    <p class="mb-0">HR Assessment</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-code fa-2x text-success mb-2"></i>
+                    <h3 id="tech-score" class="text-primary">-/100</h3>
+                    <p class="mb-0">Technical Score</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-center">
+                <div class="card-body">
+                    <i class="fas fa-thumbs-up fa-2x text-primary mb-2"></i>
+                    <h3 id="recommendation" class="text-primary">-</h3>
+                    <p class="mb-0">Recommendation</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="card">
+        <div class="card-header">
+            <h5><i class="fas fa-download me-2"></i>Download Report</h5>
+        </div>
+        <div class="card-body">
+            <button class="btn btn-outline-primary me-2" onclick="downloadReport('markdown')">
+                <i class="fab fa-markdown me-2"></i>Markdown
+            </button>
+            <button class="btn btn-outline-success me-2" onclick="downloadReport('json')">
+                <i class="fas fa-code me-2"></i>JSON
+            </button>
+        </div>
+    </div>
+    
+    <div class="card mt-4">
+        <div class="card-header">
+            <h5><i class="fas fa-file-alt me-2"></i>Detailed Report</h5>
+        </div>
+        <div class="card-body">
+            <div id="assessment-content" style="white-space: pre-line; font-family: monospace;">
+                <!-- Assessment content will be loaded here -->
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    loadResults();
+});
+
+function loadResults() {
+    fetch('/api/progress')
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'completed' && data.result) {
+            displayResults(data.result);
+        }
+    });
+}
+
+function displayResults(result) {
+    document.getElementById('assessment-content').textContent = result.assessment;
+    
+    // Try to extract scores from the assessment
+    const assessment = result.assessment;
+    const hrMatch = assessment.match(/(\d+)\/80/);
+    const techMatch = assessment.match(/(\d+)\/100/);
+    const totalMatch = assessment.match(/(\d+)\/180/);
+    
+    if (hrMatch) document.getElementById('hr-score').textContent = hrMatch[0];
+    if (techMatch) document.getElementById('tech-score').textContent = techMatch[0];
+    if (totalMatch) document.getElementById('total-score').textContent = totalMatch[0];
+}
+
+function downloadReport(format) {
+    fetch(`/api/download/${format}`)
+    .then(response => response.blob())
+    .then(blob => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `interview_assessment.${format}`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+    });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,6 @@
+.env 
+*.env 
+__pycache__/ 
+reports/*.md 
+reports/*.pdf 
+reports/*.json 
